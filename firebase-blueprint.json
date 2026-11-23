@@ -1,0 +1,155 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Campus user profile with verified academic role and training clearances.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_-]+$" },
+        "email": { "type": "string", "format": "email", "maxLength": 254 },
+        "displayName": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "role": { "type": "string", "enum": ["Student", "Faculty", "Admin"] },
+        "department": { "type": "string", "minLength": 2, "maxLength": 80 },
+        "completedTrainings": { "type": "array" },
+        "safetyCleared": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "email", "displayName", "role", "department", "completedTrainings", "safetyCleared", "createdAt", "updatedAt"]
+    },
+    "Equipment": {
+      "title": "Equipment",
+      "description": "Shared laboratory equipment resource with capacity, operating hours, and training/safety constraints.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_-]+$" },
+        "name": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "description": { "type": "string", "minLength": 5, "maxLength": 1500 },
+        "category": { "type": "string", "minLength": 2, "maxLength": 80 },
+        "department": { "type": "string", "minLength": 2, "maxLength": 80 },
+        "location": { "type": "string", "minLength": 2, "maxLength": 150 },
+        "capacity": { "type": "integer" },
+        "operatingHours": { "type": "object" },
+        "maxBookingDurationMinutes": { "type": "integer" },
+        "requiredTrainings": { "type": "array" },
+        "safetyRequirements": { "type": "array" },
+        "tags": { "type": "array" },
+        "archived": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "name", "description", "category", "department", "location", "capacity", "operatingHours", "maxBookingDurationMinutes", "requiredTrainings", "safetyRequirements", "tags", "archived", "createdAt", "updatedAt"]
+    },
+    "AccessRequest": {
+      "title": "AccessRequest",
+      "description": "Student or researcher request for equipment access evaluated by fairness scoring and faculty approval.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_-]+$" },
+        "equipmentId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_-]+$" },
+        "requesterId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_-]+$" },
+        "requesterName": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "requesterDepartment": { "type": "string", "minLength": 2, "maxLength": 80 },
+        "startTime": { "type": "string", "format": "date-time" },
+        "endTime": { "type": "string", "format": "date-time" },
+        "purpose": { "type": "string", "minLength": 5, "maxLength": 600 },
+        "projectType": { "type": "string", "enum": ["CAPSTONE", "RESEARCH", "COURSEWORK", "CLUB", "PERSONAL"] },
+        "deadline": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["PENDING", "APPROVED", "REJECTED", "CANCELLED"] },
+        "priorityScore": { "type": "number" },
+        "fairnessBreakdown": { "type": "object" },
+        "decisionReason": { "type": "string", "maxLength": 400 },
+        "overrideReason": { "type": "string", "maxLength": 400 },
+        "reviewedBy": { "type": "string", "maxLength": 128 },
+        "reviewedAt": { "type": "string", "format": "date-time" },
+        "bookingId": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "equipmentId", "requesterId", "requesterName", "requesterDepartment", "startTime", "endTime", "purpose", "projectType", "status", "priorityScore", "fairnessBreakdown", "createdAt", "updatedAt"]
+    },
+    "Booking": {
+      "title": "Booking",
+      "description": "Confirmed or historical laboratory equipment reservation over a half-open [startTime, endTime) interval.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_-]+$" },
+        "equipmentId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_-]+$" },
+        "userId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_-]+$" },
+        "userName": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "userDepartment": { "type": "string", "minLength": 2, "maxLength": 80 },
+        "accessRequestId": { "type": "string", "maxLength": 128 },
+        "startTime": { "type": "string", "format": "date-time" },
+        "endTime": { "type": "string", "format": "date-time" },
+        "purpose": { "type": "string", "minLength": 5, "maxLength": 500 },
+        "status": { "type": "string", "enum": ["CONFIRMED", "CANCELLED", "COMPLETED"] },
+        "cancelledBy": { "type": "string", "maxLength": 128 },
+        "cancelReason": { "type": "string", "maxLength": 300 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "equipmentId", "userId", "userName", "userDepartment", "startTime", "endTime", "purpose", "status", "createdAt", "updatedAt"]
+    },
+    "MaintenanceWindow": {
+      "title": "MaintenanceWindow",
+      "description": "Scheduled equipment maintenance or calibration block preventing bookings during [startTime, endTime).",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_-]+$" },
+        "equipmentId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_-]+$" },
+        "title": { "type": "string", "minLength": 3, "maxLength": 120 },
+        "reason": { "type": "string", "minLength": 5, "maxLength": 500 },
+        "startTime": { "type": "string", "format": "date-time" },
+        "endTime": { "type": "string", "format": "date-time" },
+        "createdBy": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "active": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "equipmentId", "title", "reason", "startTime", "endTime", "createdBy", "active", "createdAt", "updatedAt"]
+    },
+    "AuditLog": {
+      "title": "AuditLog",
+      "description": "Immutable compliance and action audit entry.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_-]+$" },
+        "actorId": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "actorRole": { "type": "string", "enum": ["Student", "Faculty", "Admin", "System"] },
+        "action": { "type": "string", "minLength": 3, "maxLength": 80 },
+        "targetType": { "type": "string", "enum": ["Equipment", "Booking", "AccessRequest", "MaintenanceWindow", "System", "User"] },
+        "targetId": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "requestId": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "metadata": { "type": "object" }
+      },
+      "required": ["id", "actorId", "actorRole", "action", "targetType", "targetId", "requestId", "timestamp", "metadata"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "Campus user profiles keyed by Firebase UID; PII isolated to owner and verified admins."
+    },
+    "/equipment/{equipmentId}": {
+      "schema": { "$ref": "#/entities/Equipment" },
+      "description": "Catalog of laboratory equipment resources."
+    },
+    "/accessRequests/{requestId}": {
+      "schema": { "$ref": "#/entities/AccessRequest" },
+      "description": "Equipment access requests subject to fairness scoring and atomic faculty approval."
+    },
+    "/bookings/{bookingId}": {
+      "schema": { "$ref": "#/entities/Booking" },
+      "description": "Confirmed and historical equipment bookings written atomically via server transactions."
+    },
+    "/maintenanceWindows/{windowId}": {
+      "schema": { "$ref": "#/entities/MaintenanceWindow" },
+      "description": "Scheduled equipment maintenance blocks."
+    },
+    "/auditLogs/{auditId}": {
+      "schema": { "$ref": "#/entities/AuditLog" },
+      "description": "Append-only audit trail written by server transactions."
+    }
+  }
+}

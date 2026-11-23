@@ -1,0 +1,33 @@
+{
+  "users": [
+    {
+      "email": "judge-student@example.edu",
+      "displayName": "Judge Student Account",
+      "provider": "email_password",
+      "password": "CHANGE_ME_BEFORE_PROVISIONING",
+      "role": "Student",
+      "department": "CSE",
+      "completedTrainings": ["gpu-safety", "robotics-safety"],
+      "safetyCleared": true
+    },
+    {
+      "email": "judge-faculty@example.edu",
+      "displayName": "Judge Faculty Account",
+      "provider": "email_password",
+      "password": "CHANGE_ME_BEFORE_PROVISIONING",
+      "role": "Faculty",
+      "department": "CSE",
+      "completedTrainings": ["gpu-safety", "cleanroom-level-1", "robotics-safety"],
+      "safetyCleared": true
+    },
+    {
+      "email": "judge-admin@example.edu",
+      "displayName": "Judge Admin Account",
+      "provider": "google",
+      "role": "Admin",
+      "department": "Administration",
+      "completedTrainings": ["gpu-safety", "cleanroom-level-1", "robotics-safety", "cnc-safety"],
+      "safetyCleared": true
+    }
+  ]
+}

@@ -1,0 +1,204 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Safety Net — default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // -------------------------------------------------------------------------
+    // Core Primitives & Identity Helpers
+    // -------------------------------------------------------------------------
+    function isSignedIn() {
+      return request.auth != null && request.auth.token.email_verified == true;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function userDoc(uid) {
+      return get(/databases/$(database)/documents/users/$(uid)).data;
+    }
+
+    function userExists(uid) {
+      return exists(/databases/$(database)/documents/users/$(uid));
+    }
+
+    function isAdmin() {
+      return isSignedIn() && userExists(request.auth.uid) && userDoc(request.auth.uid).role == 'Admin';
+    }
+
+    function isFacultyOrAdmin() {
+      return isSignedIn() && userExists(request.auth.uid) && (
+        userDoc(request.auth.uid).role == 'Faculty' ||
+        userDoc(request.auth.uid).role == 'Admin'
+      );
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidTagList(listVal, maxLen) {
+      return listVal is list
+        && listVal.size() <= maxLen
+        && (listVal.size() == 0 || (listVal[0] is string && listVal[0].size() >= 1 && listVal[0].size() <= 120));
+    }
+
+    // -------------------------------------------------------------------------
+    // Validation Blueprints
+    // -------------------------------------------------------------------------
+    function isValidUser(data, userId) {
+      return data.keys().hasAll(['id', 'email', 'displayName', 'role', 'department', 'completedTrainings', 'safetyCleared', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['id', 'email', 'displayName', 'role', 'department', 'completedTrainings', 'safetyCleared', 'createdAt', 'updatedAt'])
+        && data.id == userId
+        && data.email is string && data.email.size() >= 3 && data.email.size() <= 254
+        && data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 120
+        && data.role in ['Student', 'Faculty', 'Admin']
+        && data.department is string && data.department.size() >= 2 && data.department.size() <= 80
+        && isValidTagList(data.completedTrainings, 50)
+        && data.safetyCleared is bool
+        && data.createdAt is string && data.createdAt.size() <= 40
+        && data.updatedAt is string && data.updatedAt.size() <= 40;
+    }
+
+    function isValidEquipment(data, equipmentId) {
+      return data.keys().hasAll(['id', 'name', 'description', 'category', 'department', 'location', 'capacity', 'operatingHours', 'maxBookingDurationMinutes', 'requiredTrainings', 'safetyRequirements', 'tags', 'archived', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['id', 'name', 'description', 'category', 'department', 'location', 'capacity', 'operatingHours', 'maxBookingDurationMinutes', 'requiredTrainings', 'safetyRequirements', 'tags', 'archived', 'createdAt', 'updatedAt'])
+        && data.id == equipmentId
+        && data.name is string && data.name.size() >= 2 && data.name.size() <= 120
+        && data.description is string && data.description.size() >= 5 && data.description.size() <= 1500
+        && data.category is string && data.category.size() >= 2 && data.category.size() <= 80
+        && data.department is string && data.department.size() >= 2 && data.department.size() <= 80
+        && data.location is string && data.location.size() >= 2 && data.location.size() <= 150
+        && data.capacity is int && data.capacity >= 1 && data.capacity <= 100
+        && data.operatingHours is map
+        && data.maxBookingDurationMinutes is int && data.maxBookingDurationMinutes >= 15 && data.maxBookingDurationMinutes <= 1440
+        && isValidTagList(data.requiredTrainings, 20)
+        && isValidTagList(data.safetyRequirements, 20)
+        && isValidTagList(data.tags, 15)
+        && data.archived is bool
+        && data.createdAt is string && data.createdAt.size() <= 40
+        && data.updatedAt is string && data.updatedAt.size() <= 40;
+    }
+
+    function isValidAccessRequest(data, reqId) {
+      return data.keys().hasAll(['id', 'equipmentId', 'requesterId', 'requesterName', 'requesterDepartment', 'startTime', 'endTime', 'purpose', 'projectType', 'status', 'priorityScore', 'fairnessBreakdown', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['id', 'equipmentId', 'requesterId', 'requesterName', 'requesterDepartment', 'startTime', 'endTime', 'purpose', 'projectType', 'deadline', 'status', 'priorityScore', 'fairnessBreakdown', 'decisionReason', 'overrideReason', 'reviewedBy', 'reviewedAt', 'bookingId', 'createdAt', 'updatedAt'])
+        && data.id == reqId
+        && isValidId(data.equipmentId)
+        && isValidId(data.requesterId)
+        && data.requesterName is string && data.requesterName.size() >= 1 && data.requesterName.size() <= 120
+        && data.requesterDepartment is string && data.requesterDepartment.size() >= 2 && data.requesterDepartment.size() <= 80
+        && data.startTime is string && data.startTime.size() <= 40
+        && data.endTime is string && data.endTime.size() <= 40
+        && data.purpose is string && data.purpose.size() >= 5 && data.purpose.size() <= 600
+        && data.projectType in ['CAPSTONE', 'RESEARCH', 'COURSEWORK', 'CLUB', 'PERSONAL']
+        && data.status in ['PENDING', 'APPROVED', 'REJECTED', 'CANCELLED']
+        && data.priorityScore is number && data.priorityScore >= 0 && data.priorityScore <= 100
+        && data.fairnessBreakdown is map
+        && data.createdAt is string && data.createdAt.size() <= 40
+        && data.updatedAt is string && data.updatedAt.size() <= 40;
+    }
+
+    // -------------------------------------------------------------------------
+    // Collection Rules
+    // -------------------------------------------------------------------------
+    // Users: PII isolated to owner or Admin. Self-assigned role escalation blocked.
+    match /users/{userId} {
+      allow get: if isValidId(userId) && (isOwner(userId) || isAdmin());
+      allow list: if isAdmin();
+      allow create: if isValidId(userId)
+        && isOwner(userId)
+        && isValidUser(incoming(), userId)
+        && incoming().role == 'Student'
+        && incoming().safetyCleared == false
+        && incoming().completedTrainings.size() == 0;
+      allow update: if isValidId(userId)
+        && isValidUser(incoming(), userId)
+        && incoming().id == existing().id
+        && incoming().createdAt == existing().createdAt
+        && (
+          isAdmin()
+          || (
+            isOwner(userId)
+            && incoming().role == existing().role
+            && incoming().safetyCleared == existing().safetyCleared
+            && incoming().completedTrainings == existing().completedTrainings
+            && incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'department', 'updatedAt'])
+          )
+        );
+      allow delete: if false;
+    }
+
+    // Equipment: Readable by verified campus users; mutated strictly via Admin/Server.
+    match /equipment/{equipmentId} {
+      allow get: if isValidId(equipmentId) && isSignedIn();
+      allow list: if isSignedIn() && resource.data.archived is bool;
+      allow create: if isValidId(equipmentId) && isAdmin() && isValidEquipment(incoming(), equipmentId);
+      allow update: if isValidId(equipmentId)
+        && isFacultyOrAdmin()
+        && isValidEquipment(incoming(), equipmentId)
+        && incoming().id == existing().id
+        && incoming().createdAt == existing().createdAt;
+      allow delete: if false;
+    }
+
+    // Access Requests: Requesters can read their own; Faculty/Admin can read all.
+    // All state transitions & capacity checks run through atomic server transactions (Admin SDK).
+    match /accessRequests/{requestId} {
+      allow get: if isValidId(requestId) && isSignedIn() && (existing().requesterId == request.auth.uid || isFacultyOrAdmin());
+      allow list: if isSignedIn() && (resource.data.requesterId == request.auth.uid || isFacultyOrAdmin());
+      allow create: if isValidId(requestId)
+        && isSignedIn()
+        && isValidAccessRequest(incoming(), requestId)
+        && incoming().requesterId == request.auth.uid
+        && incoming().status == 'PENDING'
+        && exists(/databases/$(database)/documents/equipment/$(incoming().equipmentId));
+      allow update: if isValidId(requestId)
+        && isSignedIn()
+        && isValidAccessRequest(incoming(), requestId)
+        && existing().status == 'PENDING'
+        && incoming().requesterId == existing().requesterId
+        && incoming().equipmentId == existing().equipmentId
+        && incoming().createdAt == existing().createdAt
+        && (
+          (isOwner(existing().requesterId)
+            && incoming().status == 'CANCELLED'
+            && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'decisionReason', 'updatedAt']))
+        );
+      allow delete: if false;
+    }
+
+    // Bookings: Authoritative schedule state — written exclusively by server transactions (Admin SDK).
+    match /bookings/{bookingId} {
+      allow get: if isValidId(bookingId) && isSignedIn() && (existing().userId == request.auth.uid || isFacultyOrAdmin());
+      allow list: if isSignedIn() && (resource.data.userId == request.auth.uid || isFacultyOrAdmin());
+      allow write: if false;
+    }
+
+    // Maintenance Windows: Readable by signed-in users; written via Faculty/Admin server endpoints.
+    match /maintenanceWindows/{windowId} {
+      allow get: if isValidId(windowId) && isSignedIn();
+      allow list: if isSignedIn() && resource.data.active is bool;
+      allow write: if false;
+    }
+
+    // Audit Logs: Strictly append-only via server transactions; readable by Faculty/Admin only.
+    match /auditLogs/{auditId} {
+      allow get: if isValidId(auditId) && isFacultyOrAdmin();
+      allow list: if isFacultyOrAdmin() && resource.data.timestamp is string;
+      allow write: if false;
+    }
+  }
+}

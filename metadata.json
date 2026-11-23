@@ -1,0 +1,6 @@
+{
+  "name": "LABLINK",
+  "description": "Intelligent Campus Resource Sharing Platform for laboratory equipment discovery, fair scheduling, faculty approvals, and utilization analytics.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
